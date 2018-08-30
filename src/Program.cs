@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 using CommandLine;
 using UnityPacker;
+using System.Text;
 
 namespace NuGet2Unity
 {
@@ -125,8 +126,8 @@ namespace NuGet2Unity
 					if(dir.Contains(ex))
 						continue;
 
-					if(dir.Contains("Newtonsoft.Json") && !opt.SkipJsonFix)
-						ApplyJsonNetFix(working);
+					if(!opt.SkipJsonFix)
+						CreateLinkXml(working);
 
 					string lib = Path.Combine(dir, "lib");
 					if (Directory.Exists(lib))
@@ -166,15 +167,27 @@ namespace NuGet2Unity
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 		}
 
-		private static void ApplyJsonNetFix(string working)
+		private static void CreateLinkXml(string working)
 		{
 			string linkxml = @"<linker>
 	<assembly fullname=""System.Core"">
 		<type fullname=""System.Linq.Expressions.Interpreter.LightLambda"" preserve=""all"" />
 	</assembly>
-</linker>";
+{0}</linker>";
 
-			File.WriteAllText(Path.Combine(working, "link.xml"), linkxml);
+			string template = "\t<assembly fullname=\"{0}\" preserve=\"all\" />\r\n";
+
+			StringBuilder sb = new StringBuilder();
+
+			string[] files = Directory.GetFiles(working, "*.dll");
+			foreach(string file in files)
+			{
+				string assembly = Path.GetFileNameWithoutExtension(file);
+				sb.AppendFormat(template, assembly);
+			}
+
+			string final = string.Format(linkxml, sb.ToString());
+			File.WriteAllText(Path.Combine(working, "link.xml"), final);
 		}
 
 		private static bool CreateUnityPackage(string package, string working, bool keepMeta, string output)

@@ -31,7 +31,7 @@ namespace NuGet2Unity
 		[Option("skipwsa", Default = true, HelpText = "Do not add WSA DLLs to package")]
 		public bool SkipWsa { get; set; }
 
-		[Option("skipjsonfix", HelpText = "Do not add link.xml to package if Json.NET is used")]
+		[Option("skiplinkxml", HelpText = "Do not add a link.xml to package")]
 		public bool SkipJsonFix { get; set; }
 	}
 }
