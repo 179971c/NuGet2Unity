@@ -53,9 +53,7 @@ namespace NuGet2Unity
 
 			CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
 
-			Cleanup(temp);
-			if(string.IsNullOrEmpty(opt.UnityProject))
-				Cleanup(working);
+			Cleanup(temp, string.IsNullOrEmpty(opt.UnityProject) ? working : string.Empty);
 
 			if(Debugger.IsAttached)
 				Console.ReadKey();
@@ -77,7 +75,7 @@ namespace NuGet2Unity
 		private static bool DownloadPackage(string package, string version, string temp)
 		{
 			ConsoleWrite("Downloading NuGet package and dependencies...");
-			string args = $"install {package} -OutputDirectory {temp}";
+			string args = $"install {package} -OutputDirectory {temp} -DependencyVersion Highest";
 			if(!string.IsNullOrEmpty(version))
 				args += $" -Version {version}";
 
@@ -171,9 +169,9 @@ namespace NuGet2Unity
 		private static void ApplyJsonNetFix(string working)
 		{
 			string linkxml = @"<linker>
-  <assembly fullname=""System.Core"">
-	<type fullname=""System.Linq.Expressions.Interpreter.LightLambda"" preserve=""all"" />
-  </assembly>
+	<assembly fullname=""System.Core"">
+		<type fullname=""System.Linq.Expressions.Interpreter.LightLambda"" preserve=""all"" />
+	</assembly>
 </linker>";
 
 			File.WriteAllText(Path.Combine(working, "link.xml"), linkxml);
@@ -190,10 +188,12 @@ namespace NuGet2Unity
 			return true;
 		}
 
-		private static void Cleanup(string dir)
+		private static void Cleanup(string dir, string working)
 		{
 			ConsoleWrite("Cleaning up...");
 			Directory.Delete(dir, true);
+			if(!string.IsNullOrEmpty(working))
+				Directory.Delete(working, true);
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 		}
 
