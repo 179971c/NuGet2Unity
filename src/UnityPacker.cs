@@ -141,7 +141,7 @@ namespace UnityPacker
 		/// Generates a .unitypackage file from this package
 		/// </summary>
 		/// <param name="root">Root directory name, usually starts with Assets/</param>
-		public void GeneratePackage(string outputPath, string root = "Assets/")
+		public void GeneratePackage(string outputPath, string root = "")
 		{
 			var tmpPath = Path.Combine(Path.GetTempPath(), "packUnity" + _name);
 			if (Directory.Exists(tmpPath))
@@ -235,7 +235,11 @@ namespace UnityPacker
 				var extension = Path.GetExtension(file).Replace(".", "");
 				if (include && extension != "meta")
 				{
-					YamlMappingNode meta = null;
+					var meta = new YamlMappingNode
+					{
+						{"guid", RandomUtils.RandomHash()},
+						{"fileFormatVersion", "2"}
+					};
 					if (respectMeta && File.Exists(file + ".meta"))
 					{
 						var metaFile = file + ".meta";
@@ -339,8 +343,9 @@ namespace UnityPacker
 			var filenames = Directory.GetFiles(sourceDirectory);
 			foreach (var filename in filenames)
 			{
-				var tarEntry = TarEntry.CreateEntryFromFile(filename);
-				tarEntry.Name = filename.Remove(0, tarArchive.RootPath.Length + 1);
+				TarEntry tarEntry = TarEntry.CreateEntryFromFile(filename);
+				string finalName = filename.Remove(0, tarArchive.RootPath.Length + 1).Replace('\\', '/');
+				tarEntry.Name = finalName;
 				tarArchive.WriteEntry(tarEntry, true);
 			}
 

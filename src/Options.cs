@@ -19,13 +19,19 @@ namespace NuGet2Unity
 		[Option('o', "outputpath", HelpText = "Path and filename of the .unitypackage")]
 		public string OutputPath { get; set; }
 
+		[Option("verbose", HelpText = "Maximum verbosity")]
+		public bool Verbose { get; set; }
+
 		[Option(HelpText = "Build for .NET 4.x compatibility")]
 		public bool Net46 { get; set; }
 
 		[Option(Default = true, HelpText = "Build for .NET Standard 2.0 compatibility")]
 		public bool NetStandard { get; set; }
 
-		[Option('s', "skipwsa", Default = true, HelpText = "Do not add WSA DLLs to package")]
+		[Option("skipwsa", Default = true, HelpText = "Do not add WSA DLLs to package")]
 		public bool SkipWsa { get; set; }
+
+		[Option("skipjsonfix", HelpText = "Do not add link.xml to package if Json.NET is used")]
+		public bool SkipJsonFix { get; set; }
 	}
 }

@@ -11,6 +11,8 @@ namespace NuGet2Unity
 {
 	class Program
 	{
+		private static Options _options;
+
 		private static string[] exclude = { "System.Runtime.Serialization.Primitives" };
 
 		static void Main(string[] args)
@@ -27,13 +29,18 @@ namespace NuGet2Unity
 			if(!VerifyOptions(opt))
 				return;
 
+			_options = opt;
+
 			string working;
 			if(string.IsNullOrEmpty(opt.UnityProject))
 				working = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 			else
 				working = opt.UnityProject;
 
+			ConsoleWriteLine($"Working directory: {working}", ConsoleColor.Gray, true);
+
 			string temp = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+			ConsoleWriteLine($"Temp directory: {temp}", ConsoleColor.Gray, true);
 
 			bool success = DownloadPackage(opt.Package, opt.Version, temp);
 			if(!success)
@@ -74,6 +81,8 @@ namespace NuGet2Unity
 			if(!string.IsNullOrEmpty(version))
 				args += $" -Version {version}";
 
+			ConsoleWriteLine($"\r\nNuGet.exe args: ${args}", ConsoleColor.Gray, true);
+
 			Process p = new Process();
 			p.StartInfo.UseShellExecute = false;
 			p.StartInfo.FileName = "nuget.exe";
@@ -98,6 +107,7 @@ namespace NuGet2Unity
 		{
 			ConsoleWrite("Copying files...");
 
+			// delete any existing working files
 			foreach(string file in Directory.GetFiles(working))
 				File.Delete(file);
 			foreach(string dir in Directory.GetDirectories(working))
@@ -109,12 +119,16 @@ namespace NuGet2Unity
 				Directory.CreateDirectory(wsa);
 
 			string[] dirs = Directory.GetDirectories(temp);
+				
 			foreach (string dir in dirs)
 			{
 				foreach(string ex in exclude)
 				{
 					if(dir.Contains(ex))
 						continue;
+
+					if(dir.Contains("Newtonsoft.Json") && !opt.SkipJsonFix)
+						ApplyJsonNetFix(working);
 
 					string lib = Path.Combine(dir, "lib");
 					if (Directory.Exists(lib))
@@ -128,6 +142,7 @@ namespace NuGet2Unity
 							foreach (string file in files)
 							{
 								string dest = Path.Combine(working, Path.GetFileName(file));
+								ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
 								File.Copy(file, dest, true);
 							}
 						}
@@ -141,6 +156,7 @@ namespace NuGet2Unity
 								foreach (string file in files)
 								{
 									string dest = Path.Combine(wsa, Path.GetFileName(file));
+									ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
 									File.Copy(file, dest, true);
 								}
 							}
@@ -150,6 +166,17 @@ namespace NuGet2Unity
 			}
 
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
+		}
+
+		private static void ApplyJsonNetFix(string working)
+		{
+			string linkxml = @"<linker>
+  <assembly fullname=""System.Core"">
+	<type fullname=""System.Linq.Expressions.Interpreter.LightLambda"" preserve=""all"" />
+  </assembly>
+</linker>";
+
+			File.WriteAllText(Path.Combine(working, "link.xml"), linkxml);
 		}
 
 		private static bool CreateUnityPackage(string package, string working, bool keepMeta, string output)
@@ -170,20 +197,26 @@ namespace NuGet2Unity
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 		}
 
-		static void ConsoleWrite(string text, ConsoleColor color = ConsoleColor.Cyan)
+		static void ConsoleWrite(string text, ConsoleColor color = ConsoleColor.Cyan, bool verbose = false)
 		{
-			ConsoleColor originalColor = Console.ForegroundColor;
-			Console.ForegroundColor = color;
-			Console.Write(text);
-			Console.ForegroundColor = originalColor;
+			if(!verbose || (verbose && _options.Verbose))
+			{
+				ConsoleColor originalColor = Console.ForegroundColor;
+				Console.ForegroundColor = color;
+				Console.Write(text);
+				Console.ForegroundColor = originalColor;
+			}
 		}
 
-		static void ConsoleWriteLine(string text, ConsoleColor color = ConsoleColor.Cyan)
+		static void ConsoleWriteLine(string text, ConsoleColor color = ConsoleColor.Cyan, bool verbose = false)
 		{
-			ConsoleColor originalColor = Console.ForegroundColor;
-			Console.ForegroundColor = color;
-			Console.WriteLine(text);
-			Console.ForegroundColor = originalColor;
+			if(!verbose || (verbose && _options.Verbose))
+			{
+				ConsoleColor originalColor = Console.ForegroundColor;
+				Console.ForegroundColor = color;
+				Console.WriteLine(text);
+				Console.ForegroundColor = originalColor;
+			}
 		}
 
 		static void ConsoleWriteError(string text)
