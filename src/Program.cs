@@ -44,15 +44,16 @@ namespace NuGet2Unity
 			ConsoleWriteLine($"Temp directory: {temp}", ConsoleColor.Gray, true);
 
 			bool success = DownloadPackage(opt.Package, opt.Version, temp);
-			if(!success)
-				return;
+			if(success)
+			{
+				string plugins = Path.Combine(working, "Assets", "Plugins");
+				Directory.CreateDirectory(plugins);
 
-			string plugins = Path.Combine(working, "Assets", "Plugins");
-			Directory.CreateDirectory(plugins);
+				success = CopyFiles(temp, plugins, opt);
 
-			CopyFiles(temp, plugins, opt);
-
-			CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
+				if(success)
+					CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
+			}
 
 			Cleanup(temp, string.IsNullOrEmpty(opt.UnityProject) ? working : string.Empty);
 
@@ -76,7 +77,7 @@ namespace NuGet2Unity
 		private static bool DownloadPackage(string package, string version, string temp)
 		{
 			ConsoleWrite("Downloading NuGet package and dependencies...");
-			string args = $"install {package} -OutputDirectory {temp} -DependencyVersion Highest";
+			string args = $"install {package} -OutputDirectory {temp} -NonInteractive -ExcludeVersion -PreRelease -DependencyVersion Highest";
 			if(!string.IsNullOrEmpty(version))
 				args += $" -Version {version}";
 
@@ -102,7 +103,7 @@ namespace NuGet2Unity
 			return true;
 		}
 
-		private static void CopyFiles(string temp, string working, Options opt)
+		private static bool CopyFiles(string temp, string working, Options opt)
 		{
 			ConsoleWrite("Copying files...");
 
@@ -145,6 +146,11 @@ namespace NuGet2Unity
 								File.Copy(file, dest, true);
 							}
 						}
+						else
+						{
+							ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dir)}.  Abort!");
+							return false;
+						}
 
 						if(!opt.SkipWsa && opt.Net46)
 						{
@@ -165,6 +171,7 @@ namespace NuGet2Unity
 			}
 
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
+			return true;
 		}
 
 		private static void CreateLinkXml(string working)
@@ -204,9 +211,13 @@ namespace NuGet2Unity
 		private static void Cleanup(string dir, string working)
 		{
 			ConsoleWrite("Cleaning up...");
-			Directory.Delete(dir, true);
-			if(!string.IsNullOrEmpty(working))
+
+			if(Directory.Exists(dir))
+				Directory.Delete(dir, true);
+
+			if(!string.IsNullOrEmpty(working) && Directory.Exists(working))
 				Directory.Delete(working, true);
+
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 		}
 

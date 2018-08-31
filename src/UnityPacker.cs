@@ -192,8 +192,7 @@ namespace UnityPacker
 			}
 
 			Directory.CreateDirectory(outputPath);
-			string unityPackage = Path.Combine(outputPath, _name);
-			unityPackage = Path.ChangeExtension(unityPackage, ".unitypackage");
+			string unityPackage = Path.Combine(outputPath, _name) + ".unitypackage";
 			CreateTarGZ(unityPackage, tmpPath);
 			Directory.Delete(tmpPath, true);
 		}
