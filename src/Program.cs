@@ -8,7 +8,7 @@ using CommandLine;
 using UnityPacker;
 using System.Text;
 using NuGet.Packaging;
-using static NuGet.Frameworks.FrameworkConstants;
+using NuGet.Frameworks;
 
 namespace NuGet2Unity
 {
@@ -287,7 +287,7 @@ namespace NuGet2Unity
 
 			// get the highest versioned .NET Standard dependencies
 			var group = (from g in manifest?.Metadata?.DependencyGroups
-						where g.TargetFramework.Framework == FrameworkIdentifiers.NetStandard
+						where g.TargetFramework.Framework == FrameworkConstants.FrameworkIdentifiers.NetStandard
 						orderby g.TargetFramework.Version descending
 						select g).FirstOrDefault();
 

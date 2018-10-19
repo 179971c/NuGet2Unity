@@ -18,9 +18,9 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
-    <PackageReference Include="NuGet.DependencyResolver.Core" Version="4.8.0" />
+    <PackageReference Include="NuGet.Packaging" Version="4.8.0" />
     <PackageReference Include="SharpZipLib.NETStandard" Version="1.0.7" />
-    <PackageReference Include="YamlDotNet" Version="5.0.1" />
+    <PackageReference Include="YamlDotNet" Version="5.2.1" />
   </ItemGroup>
 
 </Project>
