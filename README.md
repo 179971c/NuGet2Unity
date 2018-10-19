@@ -10,7 +10,8 @@ Scripting Runtime Version | .NET 4.x Equivalent
 Scripting Backend | Mono or IL2CPP
 Api Compatibility Level | .NET Standard 2.0
 
-**Usage:**
+
+## Usage
 `dotnet NuGet2Unity.dll [options]`
 
 Switch | Description
