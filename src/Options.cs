@@ -16,7 +16,7 @@ namespace NuGet2Unity
 		[Option('m', "includemeta", HelpText = "Include .meta files from the Unity project")]
 		public bool IncludeMeta { get; set; }
 
-		[Option('o', "outputpath", HelpText = "Path and filename of the .unitypackage")]
+		[Option('o', "outputpath", Required = true, HelpText = "Directory to save the .unitypackage")]
 		public string OutputPath { get; set; }
 
 		[Option("verbose", HelpText = "Maximum verbosity")]

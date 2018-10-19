@@ -145,9 +145,7 @@ namespace UnityPacker
 		{
 			var tmpPath = Path.Combine(Path.GetTempPath(), "packUnity" + _name);
 			if (Directory.Exists(tmpPath))
-			{
 				Directory.Delete(tmpPath, true);
-			}
 			Directory.CreateDirectory(tmpPath);
 
 			foreach (var file in _files)
