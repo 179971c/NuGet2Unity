@@ -20,7 +20,7 @@ Switch | Description
 -v, --version       |  Version of NuGet package to use
 -p, --unityproject  |  Path to the Unity project to include with this package
 -m, --includemeta   |  Include .meta files from the Unity project
--o, --outputpath    |  Path and filename of the .unitypackage
+-o, --outputpath    |  Required. Path and filename of the .unitypackage
 --verbose           |  Maximum verbosity
 --netstandard       |  (Default: true) Build for .NET Standard 2.0 compatibility
 --skiplinkxml       |  Do not add a link.xml to package
