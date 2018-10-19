@@ -1,6 +1,6 @@
 # NuGet2Unity
 
-A .NET Core app to package a NuGet pacakge (and dependencies) as a .UnityPackage for import into a Unity 2018 (or higher) project.
+A .NET Core app to package a NuGet package (and dependencies) as a .UnityPackage for import into a Unity 2018 (or higher) project.
 This will build a package that (should) be compatible with the following Unity player settings
 (Player Settings -> Other Settings -> Configuration)
 
