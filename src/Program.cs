@@ -195,7 +195,7 @@ namespace NuGet2Unity
 					ZipArchive za = new ZipArchive(ms);
 					za.ExtractToDirectory(Path.Combine(temp, package));
 				}
-				catch(Exception ex)
+				catch(Exception)
 				{
 					ConsoleWriteError($"\nUnable to download/extract {package}");
 					return false;
