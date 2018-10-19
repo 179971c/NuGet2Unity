@@ -154,13 +154,13 @@ namespace NuGet2Unity
 			Directory.CreateDirectory(plugins);
 			ConsoleWriteLine($"Plugins dir: {plugins}", Console.BackgroundColor, true);
 
-			DownloadPackage(opt.Package, opt.Version, temp);
-
-			bool success = CopyFiles(temp, plugins, opt);
-
+			bool success = DownloadPackage(opt.Package, opt.Version, temp);
 			if(success)
-				CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
-
+			{
+				success = CopyFiles(temp, plugins, opt);
+				if(success)
+					CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
+			}
 			Cleanup(temp, string.IsNullOrEmpty(opt.UnityProject) ? working : string.Empty);
 
 			if(Debugger.IsAttached)
@@ -180,20 +180,29 @@ namespace NuGet2Unity
 			return true;
 		}
 
-		private static void DownloadPackage(string package, string version, string temp)
+		private static bool DownloadPackage(string package, string version, string temp)
 		{
 			string path = Path.Combine(temp, package);
 			string url = string.Format(NuGetUrl, package, version ?? string.Empty);
 			if(!Directory.Exists(path))
 			{
-				ConsoleWrite($"Downloading and extracting {package}...");
+				ConsoleWrite($"Downloading and extracting {package} {version}...");
 				WebClient wc = new WebClient();
-				byte[] buff = wc.DownloadData(url);
-				MemoryStream ms = new MemoryStream(buff);
-				ZipArchive za = new ZipArchive(ms);
-				za.ExtractToDirectory(Path.Combine(temp, package));
+				try
+				{
+					byte[] buff = wc.DownloadData(url);
+					MemoryStream ms = new MemoryStream(buff);
+					ZipArchive za = new ZipArchive(ms);
+					za.ExtractToDirectory(Path.Combine(temp, package));
+				}
+				catch(Exception ex)
+				{
+					ConsoleWriteError($"\nUnable to download/extract {package}");
+					return false;
+				}
 				ConsoleWriteLine("Complete", ConsoleColor.Green);
 			}
+			return true;
 		}
 
 		private static bool CopyFiles(string temp, string working, Options opt)
@@ -209,7 +218,7 @@ namespace NuGet2Unity
 			//if(!opt.SkipWsa)
 			//	Directory.CreateDirectory(wsa);
 
-			string[] dependencies = GetDependencies(temp, _options.Package).ToArray();
+			string[] dependencies = GetDependencies(temp, _options.Package);
 
 			ConsoleWrite("Copying files...");
 
@@ -238,19 +247,19 @@ namespace NuGet2Unity
 						ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dependency)}.");
 
 					//if(!opt.SkipWsa && opt.Net46)
-					{
-						string[] uap = Directory.GetDirectories(lib, "uap*");
-						if(uap != null && uap.Any())
-						{
-							string[] files = Directory.GetFiles(uap[0], "*.dll");
-							foreach (string file in files)
-							{
-								string dest = Path.Combine(wsa, Path.GetFileName(file));
-								ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
-								File.Copy(file, dest, true);
-							}
-						}
-					}
+					//{
+					//	string[] uap = Directory.GetDirectories(lib, "uap*");
+					//	if(uap != null && uap.Any())
+					//	{
+					//		string[] files = Directory.GetFiles(uap[0], "*.dll");
+					//		foreach (string file in files)
+					//		{
+					//			string dest = Path.Combine(wsa, Path.GetFileName(file));
+					//			ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
+					//			File.Copy(file, dest, true);
+					//		}
+					//	}
+					//}
 				}
 			}
 
@@ -326,7 +335,7 @@ namespace NuGet2Unity
 
 		private static bool CreateUnityPackage(string package, string working, bool keepMeta, string output)
 		{
-			ConsoleWrite("Creating Unity package (this may take a few minutes)...");
+			ConsoleWrite("Creating Unity package...");
 
 			string[] includeDirs = { "Assets" };
 			Package p = Package.FromDirectory(working, package, keepMeta, includeDirs);
