@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using CommandLine;
 using UnityPacker;
 using System.Text;
+using NuGet.Packaging;
+using static NuGet.Frameworks.FrameworkConstants;
 
 namespace NuGet2Unity
 {
@@ -14,7 +16,103 @@ namespace NuGet2Unity
 	{
 		private static Options _options;
 
-		private static string[] exclude = { "System.Runtime.Serialization.Primitives" };
+		private static string[] exclude = { 
+			"Microsoft.Win32.Primitives",
+			"System.AppContext",
+			"System.Collections.Concurrent",
+			"System.Collections",
+			"System.Collections.NonGeneric",
+			"System.Collections.Specialized",
+			"System.ComponentModel",
+			"System.ComponentModel.EventBasedAsync",
+			"System.ComponentModel.Primitives",
+			"System.ComponentModel.TypeConverter",
+			"System.Console",
+			"System.Data.Common",
+			"System.Diagnostics.Contracts",
+			"System.Diagnostics.Debug",
+			"System.Diagnostics.FileVersionInfo",
+			"System.Diagnostics.Process",
+			"System.Diagnostics.StackTrace",
+			"System.Diagnostics.TextWriterTraceListener",
+			"System.Diagnostics.Tools",
+			"System.Diagnostics.TraceSource",
+			"System.Diagnostics.Tracing",
+			"System.Drawing.Primitives",
+			"System.Dynamic.Runtime",
+			"System.Globalization.Calendars",
+			"System.Globalization",
+			"System.Globalization.Extensions",
+			"System.IO.Compression",
+			"System.IO.Compression.ZipFile",
+			"System.IO",
+			"System.IO.FileSystem",
+			"System.IO.FileSystem.DriveInfo",
+			"System.IO.FileSystem.Primitives",
+			"System.IO.FileSystem.Watcher",
+			"System.IO.IsolatedStorage",
+			"System.IO.MemoryMappedFiles",
+			"System.IO.Pipes",
+			"System.IO.UnmanagedMemoryStream",
+			"System.Linq",
+			"System.Linq.Expressions",
+			"System.Linq.Parallel",
+			"System.Linq.Queryable",
+			"System.Net.Http",
+			"System.Net.NameResolution",
+			"System.Net.NetworkInformation",
+			"System.Net.Ping",
+			"System.Net.Primitives",
+			"System.Net.Requests",
+			"System.Net.Security",
+			"System.Net.Sockets",
+			"System.Net.WebHeaderCollection",
+			"System.Net.WebSockets.Client",
+			"System.Net.WebSockets",
+			"System.ObjectModel",
+			"System.Reflection",
+			"System.Reflection.Extensions",
+			"System.Reflection.Primitives",
+			"System.Resources.Reader",
+			"System.Resources.ResourceManager",
+			"System.Resources.Writer",
+			"System.Runtime.CompilerServices.VisualC",
+			"System.Runtime",
+			"System.Runtime.Extensions",
+			"System.Runtime.Handles",
+			"System.Runtime.InteropServices",
+			"System.Runtime.InteropServices.RuntimeInformation",
+			"System.Runtime.Numerics",
+			"System.Runtime.Serialization.Formatters",
+			"System.Runtime.Serialization.Json",
+			"System.Runtime.Serialization.Primitives",
+			"System.Runtime.Serialization.Xml",
+			"System.Security.Claims",
+			"System.Security.Cryptography.Algorithms",
+			"System.Security.Cryptography.Csp",
+			"System.Security.Cryptography.Encoding",
+			"System.Security.Cryptography.Primitives",
+			"System.Security.Cryptography.X509Certificates",
+			"System.Security.Principal",
+			"System.Security.SecureString",
+			"System.Text.Encoding",
+			"System.Text.Encoding.Extensions",
+			"System.Text.RegularExpressions",
+			"System.Threading",
+			"System.Threading.Overlapped",
+			"System.Threading.Tasks",
+			"System.Threading.Tasks.Parallel",
+			"System.Threading.Thread",
+			"System.Threading.ThreadPool",
+			"System.Threading.Timer",
+			"System.ValueTuple",
+			"System.Xml.ReaderWriter",
+			"System.Xml.XDocument",
+			"System.Xml.XmlDocument",
+			"System.Xml.XmlSerializer",
+			"System.Xml.XPath",
+			"System.Xml.XPath.XDocument",
+		};
 
 		static void Main(string[] args)
 		{
@@ -77,7 +175,7 @@ namespace NuGet2Unity
 		private static bool DownloadPackage(string package, string version, string temp)
 		{
 			ConsoleWrite("Downloading NuGet package and dependencies...");
-			string args = $"install {package} -OutputDirectory {temp} -NonInteractive -ExcludeVersion -PreRelease -DependencyVersion Highest";
+			string args = $"install {package} -OutputDirectory {temp} -NonInteractive -ExcludeVersion -PreRelease -DependencyVersion Highest -PackageSaveMode nuspec -Framework netstandard2.0";
 			if(!string.IsNullOrEmpty(version))
 				args += $" -Version {version}";
 
@@ -118,52 +216,46 @@ namespace NuGet2Unity
 			if(!opt.SkipWsa)
 				Directory.CreateDirectory(wsa);
 
-			string[] dirs = Directory.GetDirectories(temp);
-				
+			string[] dirs = GetDependencies(temp, _options.Package).OrderBy(x => x).ToArray();
+
 			foreach (string dir in dirs)
 			{
-				foreach(string ex in exclude)
+				if(!opt.SkipJsonFix)
+					CreateLinkXml(working);
+
+				string lib = Path.Combine(temp, dir, "lib");
+				if (Directory.Exists(lib))
 				{
-					if(dir.Contains(ex))
-						continue;
-
-					if(!opt.SkipJsonFix)
-						CreateLinkXml(working);
-
-					string lib = Path.Combine(dir, "lib");
-					if (Directory.Exists(lib))
+					string[] ns = Directory.GetDirectories(lib, "netstandard*");
+					if(ns != null && ns.Any())
 					{
-						string[] ns = Directory.GetDirectories(lib, "netstandard*");
-						if(ns != null && ns.Any())
-						{
-							ns = ns.OrderByDescending(i => i).ToArray();
+						ns = ns.OrderByDescending(i => i).ToArray();
 
-							string[] files = Directory.GetFiles(ns[0], "*.dll");
+						string[] files = Directory.GetFiles(ns[0], "*.dll");
+						foreach (string file in files)
+						{
+							string dest = Path.Combine(working, Path.GetFileName(file));
+							ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
+							File.Copy(file, dest, true);
+						}
+					}
+					else
+					{
+						ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dir)}.  Abort!");
+						//return false;
+					}
+
+					if(!opt.SkipWsa && opt.Net46)
+					{
+						string[] uap = Directory.GetDirectories(lib, "uap*");
+						if(uap != null && uap.Any())
+						{
+							string[] files = Directory.GetFiles(uap[0], "*.dll");
 							foreach (string file in files)
 							{
-								string dest = Path.Combine(working, Path.GetFileName(file));
+								string dest = Path.Combine(wsa, Path.GetFileName(file));
 								ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
 								File.Copy(file, dest, true);
-							}
-						}
-						else
-						{
-							ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dir)}.  Abort!");
-							return false;
-						}
-
-						if(!opt.SkipWsa && opt.Net46)
-						{
-							string[] uap = Directory.GetDirectories(lib, "uap*");
-							if(uap != null && uap.Any())
-							{
-								string[] files = Directory.GetFiles(uap[0], "*.dll");
-								foreach (string file in files)
-								{
-									string dest = Path.Combine(wsa, Path.GetFileName(file));
-									ConsoleWrite($"\r\n-> Copying {file} to {dest}", ConsoleColor.Gray, true);
-									File.Copy(file, dest, true);
-								}
 							}
 						}
 					}
@@ -172,6 +264,45 @@ namespace NuGet2Unity
 
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 			return true;
+		}
+
+		private static string[] GetDependencies(string dir, string package)
+		{
+			// if it's in this list, Unity handles it and its dependencies, don't include it
+			if(exclude.Contains(package))
+				return null;
+
+			// create the list and add the package itself
+			List<string> dependencies = new List<string> { package };
+
+			// see if there's a nuspec for this package, bail out if there isn't
+			string nuspec = Path.Combine(dir, package, package + ".nuspec");
+			if(!File.Exists(nuspec))
+				return null;
+
+			// parse the nuspec
+			FileStream fs = new FileStream(nuspec, FileMode.Open);
+			Manifest manifest = Manifest.ReadFrom(fs, true);
+			fs.Close();
+
+			// get the highest versioned .NET Standard dependencies
+			var group = (from g in manifest?.Metadata?.DependencyGroups
+						where g.TargetFramework.Framework == FrameworkIdentifiers.NetStandard
+						orderby g.TargetFramework.Version descending
+						select g).FirstOrDefault();
+
+			if(group != null)
+			{
+				foreach(var p in group.Packages)
+				{
+					// get this dependency's dependencies recursively and add them to the list
+					string[] sub = GetDependencies(dir, p.Id);
+					if(sub != null)
+						dependencies.AddRange(sub);
+				}
+			}
+
+			return dependencies.Distinct().ToArray();
 		}
 
 		private static void CreateLinkXml(string working)
