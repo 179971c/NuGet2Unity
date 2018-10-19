@@ -7,16 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="nuget.exe" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="nuget.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.3.0" />
     <PackageReference Include="NuGet.Packaging" Version="4.8.0" />
     <PackageReference Include="SharpZipLib.NETStandard" Version="1.0.7" />

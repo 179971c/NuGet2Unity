@@ -9,14 +9,22 @@ using UnityPacker;
 using System.Text;
 using NuGet.Packaging;
 using NuGet.Frameworks;
+using System.Net;
+using System.IO.Compression;
 
 namespace NuGet2Unity
 {
 	class Program
 	{
 		private static Options _options;
+		private static string NuGetUrl = "https://www.nuget.org/api/v2/package/{0}/{1}";
 
-		private static string[] exclude = { 
+		private static string[] exclude = {
+			// system libs
+			"NETStandard.Library",
+			"Microsoft.NETCore.Platforms",
+
+			// Unity-provided libs (from <Unity>\Editor\Data\NetStandard\compat\2.0.0\shims\netstandard)
 			"Microsoft.Win32.Primitives",
 			"System.AppContext",
 			"System.Collections.Concurrent",
@@ -139,19 +147,19 @@ namespace NuGet2Unity
 			ConsoleWriteLine($"Working directory: {working}", ConsoleColor.Gray, true);
 
 			string temp = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+			Directory.CreateDirectory(temp);
 			ConsoleWriteLine($"Temp directory: {temp}", ConsoleColor.Gray, true);
 
-			bool success = DownloadPackage(opt.Package, opt.Version, temp);
+			string plugins = Path.Combine(working, "Assets", "Plugins");
+			Directory.CreateDirectory(plugins);
+			ConsoleWriteLine($"Plugins dir: {plugins}", Console.BackgroundColor, true);
+
+			DownloadPackage(opt.Package, opt.Version, temp);
+
+			bool success = CopyFiles(temp, plugins, opt);
+
 			if(success)
-			{
-				string plugins = Path.Combine(working, "Assets", "Plugins");
-				Directory.CreateDirectory(plugins);
-
-				success = CopyFiles(temp, plugins, opt);
-
-				if(success)
-					CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
-			}
+				CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
 
 			Cleanup(temp, string.IsNullOrEmpty(opt.UnityProject) ? working : string.Empty);
 
@@ -172,39 +180,24 @@ namespace NuGet2Unity
 			return true;
 		}
 
-		private static bool DownloadPackage(string package, string version, string temp)
+		private static void DownloadPackage(string package, string version, string temp)
 		{
-			ConsoleWrite("Downloading NuGet package and dependencies...");
-			string args = $"install {package} -OutputDirectory {temp} -NonInteractive -ExcludeVersion -PreRelease -DependencyVersion Highest -PackageSaveMode nuspec -Framework netstandard2.0";
-			if(!string.IsNullOrEmpty(version))
-				args += $" -Version {version}";
-
-			ConsoleWriteLine($"\r\nNuGet.exe args: ${args}", ConsoleColor.Gray, true);
-
-			Process p = new Process();
-			p.StartInfo.UseShellExecute = false;
-			p.StartInfo.FileName = "nuget.exe";
-			p.StartInfo.Arguments = args;
-			p.StartInfo.RedirectStandardError = true;
-			p.StartInfo.CreateNoWindow = true;
-			p.Start();
-			p.WaitForExit();
-
-			string errorText = p.StandardError.ReadToEnd();
-			if (!string.IsNullOrEmpty(errorText))
+			string path = Path.Combine(temp, package);
+			string url = string.Format(NuGetUrl, package, version ?? string.Empty);
+			if(!Directory.Exists(path))
 			{
-				ConsoleWriteError(errorText);
-				return false;
+				ConsoleWrite($"Downloading and extracting {package}...");
+				WebClient wc = new WebClient();
+				byte[] buff = wc.DownloadData(url);
+				MemoryStream ms = new MemoryStream(buff);
+				ZipArchive za = new ZipArchive(ms);
+				za.ExtractToDirectory(Path.Combine(temp, package));
+				ConsoleWriteLine("Complete", ConsoleColor.Green);
 			}
-
-			ConsoleWriteLine("Complete", ConsoleColor.Green);
-			return true;
 		}
 
 		private static bool CopyFiles(string temp, string working, Options opt)
 		{
-			ConsoleWrite("Copying files...");
-
 			// delete any existing working files
 			foreach(string file in Directory.GetFiles(working))
 				File.Delete(file);
@@ -213,17 +206,19 @@ namespace NuGet2Unity
 
 			string wsa = Path.Combine(working, "WSA");
 
-			if(!opt.SkipWsa)
-				Directory.CreateDirectory(wsa);
+			//if(!opt.SkipWsa)
+			//	Directory.CreateDirectory(wsa);
 
-			string[] dirs = GetDependencies(temp, _options.Package).OrderBy(x => x).ToArray();
+			string[] dependencies = GetDependencies(temp, _options.Package).ToArray();
 
-			foreach (string dir in dirs)
+			ConsoleWrite("Copying files...");
+
+			foreach (string dependency in dependencies)
 			{
 				if(!opt.SkipJsonFix)
 					CreateLinkXml(working);
 
-				string lib = Path.Combine(temp, dir, "lib");
+				string lib = Path.Combine(temp, dependency, "lib");
 				if (Directory.Exists(lib))
 				{
 					string[] ns = Directory.GetDirectories(lib, "netstandard*");
@@ -240,12 +235,9 @@ namespace NuGet2Unity
 						}
 					}
 					else
-					{
-						ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dir)}.  Abort!");
-						//return false;
-					}
+						ConsoleWriteError($"Could not find a .NET Standard DLL for ${Path.GetFileName(dependency)}.");
 
-					if(!opt.SkipWsa && opt.Net46)
+					//if(!opt.SkipWsa && opt.Net46)
 					{
 						string[] uap = Directory.GetDirectories(lib, "uap*");
 						if(uap != null && uap.Any())
@@ -296,6 +288,10 @@ namespace NuGet2Unity
 				foreach(var p in group.Packages)
 				{
 					// get this dependency's dependencies recursively and add them to the list
+					if(exclude.Contains(p.Id))
+						continue;
+
+					DownloadPackage(p.Id, null, dir);
 					string[] sub = GetDependencies(dir, p.Id);
 					if(sub != null)
 						dependencies.AddRange(sub);
