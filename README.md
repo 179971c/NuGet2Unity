@@ -28,3 +28,8 @@ Switch | Description
 --skiplinkxml       |  Do not add a link.xml to package
 --help              |  Display this help screen.
 --version           |  Display version information.
+
+## Example
+Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like:
+
+`dotnet NuGet2Unity.dll -n WindowsAzure.Storage -o .`
