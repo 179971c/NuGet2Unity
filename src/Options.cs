@@ -22,14 +22,8 @@ namespace NuGet2Unity
 		[Option("verbose", HelpText = "Maximum verbosity")]
 		public bool Verbose { get; set; }
 
-		//[Option(HelpText = "Build for .NET 4.x compatibility")]
-		//public bool Net46 { get; set; }
-
 		[Option(Default = true, HelpText = "Build for .NET Standard 2.0 compatibility")]
 		public bool NetStandard { get; set; }
-
-		//[Option("skipwsa", Default = true, HelpText = "Do not add WSA DLLs to package")]
-		//public bool SkipWsa { get; set; }
 
 		[Option("skiplinkxml", HelpText = "Do not add a link.xml to package")]
 		public bool SkipJsonFix { get; set; }
