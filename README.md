@@ -30,6 +30,6 @@ Switch | Description
 --version           |  Display version information.
 
 ## Example
-Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like:
+Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like (note the `--` argument which ensures the switches get passed to the app itself, not the dotnet command:
 
-`dotnet NuGet2Unity.dll -n WindowsAzure.Storage -o .`
+`dotnet run -- -n WindowsAzure.Storage -o .`
