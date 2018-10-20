@@ -59,10 +59,11 @@ namespace NuGet2Unity
 				if(success)
 					CreateUnityPackage(opt.Package, workingDir, opt, version);
 			}
-			Cleanup(downloadDir, string.IsNullOrEmpty(opt.UnityProject) ? workingDir : string.Empty);
 
 			if(Debugger.IsAttached)
 				Console.ReadKey();
+
+			Cleanup(downloadDir, string.IsNullOrEmpty(opt.UnityProject) ? workingDir : string.Empty);
 		}
 
 		private static string GetPackageVersion(string dir, string package)
@@ -193,7 +194,7 @@ namespace NuGet2Unity
 					if(excludePackages.Contains(p.Id))
 						continue;
 
-					DownloadPackage(p.Id, null, dir);
+					DownloadPackage(p.Id, p.VersionRange.MinVersion.ToNormalizedString(), dir);
 					string[] sub = GetDependencies(dir, p.Id);
 					if(sub != null)
 						dependencies.AddRange(sub);
