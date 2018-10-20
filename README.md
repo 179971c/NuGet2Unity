@@ -10,6 +10,8 @@ Scripting Runtime Version | .NET 4.x Equivalent
 Scripting Backend | Mono or IL2CPP
 Api Compatibility Level | .NET Standard 2.0
 
+## Build
+It is assumed you have .NET Core 2.1 installed.  If not, you can download from [here](https://www.microsoft.com/net/download/dotnet-core/2.1).  Once installed, from the `src` directory, run the standard `dotnet build` command.
 
 ## Usage
 `dotnet NuGet2Unity.dll [options]`
