@@ -14,7 +14,7 @@ Api Compatibility Level | .NET Standard 2.0
 It is assumed you have .NET Core 2.1 installed.  If not, you can download from [here](https://www.microsoft.com/net/download/dotnet-core/2.1).  Once installed, from the `src` directory, run the standard `dotnet build` command.
 
 ## Usage
-`dotnet NuGet2Unity.dll [options]`
+Assuming you are in the `src` directory, simply run the standard `dotnet run` command with the following options:
 
 Switch | Description
 -------|-------------
