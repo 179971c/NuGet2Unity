@@ -14,7 +14,7 @@ Api Compatibility Level | .NET Standard 2.0
 It is assumed you have .NET Core 2.1 installed.  If not, you can download from [here](https://www.microsoft.com/net/download/dotnet-core/2.1).  Once installed, from the `src` directory, run the standard `dotnet build` command.
 
 ## Usage
-`dotnet NuGet2Unity.dll [options]`
+Assuming you are in the `src` directory, simply run the standard `dotnet run` command with the following options:
 
 Switch | Description
 -------|-------------
@@ -30,6 +30,6 @@ Switch | Description
 --version           |  Display version information.
 
 ## Example
-Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like:
+Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like (note the `--` argument which ensures the switches get passed to the app itself, not the dotnet command:
 
-`dotnet NuGet2Unity.dll -n WindowsAzure.Storage -o .`
+`dotnet run -- -n WindowsAzure.Storage -o .`
