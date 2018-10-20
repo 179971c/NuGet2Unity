@@ -157,14 +157,30 @@ namespace NuGet2Unity
 			bool success = DownloadPackage(opt.Package, opt.Version, temp);
 			if(success)
 			{
+				string version = GetPackageVersion(temp, opt.Package);
 				success = CopyFiles(temp, plugins, opt);
 				if(success)
-					CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath);
+					CreateUnityPackage(opt.Package, working, opt.IncludeMeta, opt.OutputPath, version);
 			}
 			Cleanup(temp, string.IsNullOrEmpty(opt.UnityProject) ? working : string.Empty);
 
 			if(Debugger.IsAttached)
 				Console.ReadKey();
+		}
+
+		private static string GetPackageVersion(string dir, string package)
+		{
+			// see if there's a nuspec for this package, bail out if there isn't
+			string nuspec = Path.Combine(dir, package, package + ".nuspec");
+			if(!File.Exists(nuspec))
+				return null;
+
+			// parse the nuspec
+			FileStream fs = new FileStream(nuspec, FileMode.Open);
+			Manifest manifest = Manifest.ReadFrom(fs, true);
+			fs.Close();
+
+			return manifest.Metadata.Version.ToNormalizedString();
 		}
 
 		private static bool VerifyOptions(Options opt)
@@ -333,12 +349,12 @@ namespace NuGet2Unity
 			File.WriteAllText(Path.Combine(working, "link.xml"), final);
 		}
 
-		private static bool CreateUnityPackage(string package, string working, bool keepMeta, string output)
+		private static bool CreateUnityPackage(string package, string working, bool keepMeta, string output, string version)
 		{
 			ConsoleWrite("Creating Unity package...");
 
 			string[] includeDirs = { "Assets" };
-			Package p = Package.FromDirectory(working, package, keepMeta, includeDirs);
+			Package p = Package.FromDirectory(working, package + "-" + version, keepMeta, includeDirs);
 			p.GeneratePackage(output);
 			ConsoleWriteLine("Complete", ConsoleColor.Green);
 			return true;
