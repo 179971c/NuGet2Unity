@@ -22,7 +22,7 @@ Switch | Description
 -v, --version       |  Version of NuGet package to use
 -p, --unityproject  |  Path to the Unity project to include with this package
 -m, --includemeta   |  Include .meta files from the Unity project
--o, --outputpath    |  Required. Path and filename of the .unitypackage
+-o, --outputpath    |  Path to save the .unitypackage
 --verbose           |  Maximum verbosity
 --netstandard       |  (Default: true) Build for .NET Standard 2.0 compatibility
 --skiplinkxml       |  Do not add a link.xml to package
@@ -32,4 +32,4 @@ Switch | Description
 ## Example
 Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like (note the `--` argument which ensures the switches get passed to the app itself, not the dotnet command:
 
-`dotnet run -- -n WindowsAzure.Storage -o .`
+`dotnet run -- -n WindowsAzure.Storage`
