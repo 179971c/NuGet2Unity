@@ -33,3 +33,6 @@ Switch | Description
 Let's say you wanted to download and package the latest version of the [WindowsAzure.Storage NuGet package](https://www.nuget.org/packages/WindowsAzure.Storage) to a Unity package in the current directory.  Here's what that would look like (note the `--` argument which ensures the switches get passed to the app itself, not the dotnet command:
 
 `dotnet run -- -n WindowsAzure.Storage`
+
+## Packages
+Check out our [Sandbox](https://aka.ms/azgamedev) site for some repackaged Azure SDKs that were built using this tool.
