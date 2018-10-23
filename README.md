@@ -24,7 +24,6 @@ Switch | Description
 -m, --includemeta   |  Include .meta files from the Unity project
 -o, --outputpath    |  Path to save the .unitypackage
 --verbose           |  Maximum verbosity
---netstandard       |  (Default: true) Build for .NET Standard 2.0 compatibility
 --skiplinkxml       |  Do not add a link.xml to package
 --help              |  Display this help screen.
 --version           |  Display version information.
