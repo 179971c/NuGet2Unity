@@ -22,9 +22,6 @@ namespace NuGet2Unity
 		[Option("verbose", HelpText = "Maximum verbosity")]
 		public bool Verbose { get; set; }
 
-		[Option(Default = true, HelpText = "Build for .NET Standard 2.0 compatibility")]
-		public bool NetStandard { get; set; }
-
 		[Option("skiplinkxml", HelpText = "Do not add a link.xml to package")]
 		public bool SkipJsonFix { get; set; }
 	}
