@@ -23,6 +23,6 @@ namespace NuGet2Unity
 		public bool Verbose { get; set; }
 
 		[Option("skiplinkxml", HelpText = "Do not add a link.xml to package")]
-		public bool SkipJsonFix { get; set; }
+		public bool SkipLinkXml { get; set; }
 	}
 }

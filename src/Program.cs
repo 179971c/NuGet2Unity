@@ -78,7 +78,7 @@ namespace NuGet2Unity
 			Manifest manifest = Manifest.ReadFrom(fs, true);
 			fs.Close();
 
-			return manifest.Metadata.Version.ToNormalizedString();
+			return manifest?.Metadata?.Version?.ToNormalizedString();
 		}
 
 		private static bool VerifyOptions(Options opt)
@@ -133,7 +133,7 @@ namespace NuGet2Unity
 
 			foreach (string dependency in dependencies)
 			{
-				if(!opt.SkipJsonFix)
+				if(!opt.SkipLinkXml)
 					CreateLinkXml(working);
 
 				string lib = Path.Combine(temp, dependency, "lib");
@@ -284,7 +284,7 @@ namespace NuGet2Unity
 		private static void Error(IEnumerable<Error> errors)
 		{
 			foreach(Error e in errors)
-				Debug.WriteLine(e);
+				ConsoleWriteError(e.ToString());
 		}
 
 		private static string[] excludePackages = {
