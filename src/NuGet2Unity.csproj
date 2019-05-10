@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <Authors>Brian Peek</Authors>
     <LangVersion>7.1</LangVersion>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
