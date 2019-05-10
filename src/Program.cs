@@ -56,6 +56,12 @@ namespace NuGet2Unity
 			IEnumerable<string> files = await ngc.DownloadPackageAndDependenciesAsync(_options.Package, _options.Version, nuGetDir);
 			ConsoleWriteLine($"OK", ConsoleColor.Green);
 
+			// delete any existing working files
+			foreach(string file in Directory.GetFiles(pluginsDir))
+				File.Delete(file);
+			foreach(string dir in Directory.GetDirectories(pluginsDir))
+				Directory.Delete(dir, true);
+
 			foreach(string file in files)
 			{
 				if(!excludePackages.Contains(Path.GetFileNameWithoutExtension(file)))
@@ -113,7 +119,7 @@ namespace NuGet2Unity
 		{
 			ConsoleWrite("Creating Unity package...");
 
-			string[] includeDirs = { "Assets" };
+			string[] includeDirs = { Path.DirectorySeparatorChar + "Assets" + Path.DirectorySeparatorChar };
 			Package p = Package.FromDirectory(working, package + "-" + opt.Version, opt.IncludeMeta, includeDirs);
 			p.GeneratePackage(opt.OutputPath);
 			ConsoleWriteLine("OK", ConsoleColor.Green);

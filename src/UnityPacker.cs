@@ -143,9 +143,7 @@ namespace UnityPacker
 		/// <param name="root">Root directory name, usually starts with Assets/</param>
 		public void GeneratePackage(string outputPath, string root = "")
 		{
-			var tmpPath = Path.Combine(Path.GetTempPath(), "packUnity" + _name);
-			if (Directory.Exists(tmpPath))
-				Directory.Delete(tmpPath, true);
+			string tmpPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 			Directory.CreateDirectory(tmpPath);
 
 			foreach (var file in _files)
