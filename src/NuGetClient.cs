@@ -24,23 +24,49 @@ namespace NuGet2Unity
 {
 	public class NuGetClient
 	{
+		private readonly ILogger _logger = NullLogger.Instance;
+		private readonly NuGetFramework _nuGetFramework;
+		private readonly ISettings _settings;
+		private readonly SourceRepositoryProvider _sourceRepositoryProvider;
+
+		public NuGetClient()
+		{
+			_nuGetFramework = NuGetFramework.ParseFolder("netstandard20");
+			_settings = Settings.LoadDefaultSettings(root: null);
+			_sourceRepositoryProvider = new SourceRepositoryProvider(_settings, Repository.Provider.GetCoreV3());
+		}
+
+		public async Task<string> GetLatestVersionAsync(string packageId)
+		{
+			using (SourceCacheContext cacheContext = new SourceCacheContext())
+			{
+				IEnumerable<SourceRepository> repositories = _sourceRepositoryProvider.GetRepositories();
+
+				foreach (var repo in repositories)
+				{
+					DependencyInfoResource dependencyInfoResource = repo.GetResource<DependencyInfoResource>();
+					IEnumerable<SourcePackageDependencyInfo> packages = await dependencyInfoResource.ResolvePackages(packageId, _nuGetFramework, cacheContext, _logger, CancellationToken.None);
+					SourcePackageDependencyInfo version = packages.Where(p => p.Listed && !p.Version.IsPrerelease).OrderByDescending(x => x.Version).First();
+					return version.Version.ToNormalizedString();
+				}
+				return null;
+			}
+		}
+
 		public async Task<IEnumerable<string>> DownloadPackageAndDependenciesAsync(string packageId, string version, string nuGetDir)
 		{
 			List<string> dllsToCopy = new List<string>();
 
-			ILogger logger = NullLogger.Instance;
 			NuGetVersion packageVersion = NuGetVersion.Parse(version);
-			NuGetFramework nuGetFramework = NuGetFramework.ParseFolder("netstandard20");
-			ISettings settings = Settings.LoadDefaultSettings(root: null);
-			SourceRepositoryProvider sourceRepositoryProvider = new SourceRepositoryProvider(settings, Repository.Provider.GetCoreV3());
 
 			using (SourceCacheContext cacheContext = new SourceCacheContext())
 			{
-				IEnumerable<SourceRepository> repositories = sourceRepositoryProvider.GetRepositories();
+				IEnumerable<SourceRepository> repositories = _sourceRepositoryProvider.GetRepositories();
+	
 				HashSet<SourcePackageDependencyInfo> availablePackages = new HashSet<SourcePackageDependencyInfo>(PackageIdentityComparer.Default);
-				await GetPackageDependenciesAync(
+				await GetPackageDependenciesAsync(
 					new PackageIdentity(packageId, packageVersion),
-					nuGetFramework, cacheContext, logger, repositories, availablePackages);
+					_nuGetFramework, cacheContext, _logger, repositories, availablePackages);
 
 				PackageResolverContext resolverContext = new PackageResolverContext(
 					DependencyBehavior.Lowest,
@@ -49,14 +75,14 @@ namespace NuGet2Unity
 					Enumerable.Empty<PackageReference>(),
 					Enumerable.Empty<PackageIdentity>(),
 					availablePackages,
-					sourceRepositoryProvider.GetRepositories().Select(s => s.PackageSource),
-					logger);
+					_sourceRepositoryProvider.GetRepositories().Select(s => s.PackageSource),
+					_logger);
 
 				PackageResolver resolver = new PackageResolver();
 				IEnumerable<SourcePackageDependencyInfo> packagesToInstall = resolver.Resolve(resolverContext, CancellationToken.None)
 					.Select(p => availablePackages.Single(x => PackageIdentityComparer.Default.Equals(x, p)));
 				PackagePathResolver packagePathResolver = new PackagePathResolver(nuGetDir);
-				PackageExtractionContext packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(settings, logger), logger);
+				PackageExtractionContext packageExtractionContext = new PackageExtractionContext(PackageSaveMode.Defaultv3, XmlDocFileSaveMode.None, ClientPolicyContext.GetClientPolicy(_settings, _logger), _logger);
 
 				FrameworkReducer frameworkReducer = new FrameworkReducer();
 
@@ -70,8 +96,8 @@ namespace NuGet2Unity
 						DownloadResourceResult downloadResult = await downloadResource.GetDownloadResourceResultAsync(
 							packageToInstall,
 							new PackageDownloadContext(cacheContext),
-							SettingsUtility.GetGlobalPackagesFolder(settings),
-							logger, CancellationToken.None);
+							SettingsUtility.GetGlobalPackagesFolder(_settings),
+							_logger, CancellationToken.None);
 
 						await PackageExtractor.ExtractPackageAsync(
 							downloadResult.PackageSource,
@@ -89,16 +115,16 @@ namespace NuGet2Unity
 					}
 
 					IEnumerable<FrameworkSpecificGroup> libItems = packageReader.GetLibItems();
-					NuGetFramework nearest = frameworkReducer.GetNearest(nuGetFramework, libItems.Select(x => x.TargetFramework));
+					NuGetFramework nearest = frameworkReducer.GetNearest(_nuGetFramework, libItems.Select(x => x.TargetFramework));
 					IEnumerable<string> items = libItems.Where(x => x.TargetFramework.Equals(nearest)).SelectMany(x => x.Items).Where(x => Path.GetExtension(x) == ".dll");
-					foreach(var item in items)
+					foreach (var item in items)
 						dllsToCopy.Add(Path.Combine(installedPath, item));
 				}
 			}
 			return dllsToCopy;
 		}
 
-		private async Task GetPackageDependenciesAync(PackageIdentity package,
+		private async Task GetPackageDependenciesAsync(PackageIdentity package,
 			NuGetFramework framework,
 			SourceCacheContext cacheContext,
 			ILogger logger,
@@ -120,7 +146,7 @@ namespace NuGet2Unity
 				availablePackages.Add(dependencyInfo);
 				foreach (PackageDependency dependency in dependencyInfo.Dependencies)
 				{
-					await GetPackageDependenciesAync(
+					await GetPackageDependenciesAsync(
 						new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion),
 						framework, cacheContext, logger, repositories, availablePackages);
 				}

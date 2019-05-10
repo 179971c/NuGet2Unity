@@ -25,18 +25,18 @@ namespace NuGet2Unity
 
 		static async Task Run(Options opt)
 		{
-			ConsoleWriteLine($"Packaging {opt.Package} for Unity..." + Environment.NewLine, ConsoleColor.White);
-
 			if(!VerifyOptions(opt))
 				return;
 
 			_options = opt;
 
+			ConsoleWriteLine($"Packaging {_options.Package} for Unity..." + Environment.NewLine, ConsoleColor.White);
+
 			string workingDir;
-			if(string.IsNullOrEmpty(opt.UnityProject))
+			if(string.IsNullOrEmpty(_options.UnityProject))
 				workingDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 			else
-				workingDir = opt.UnityProject;
+				workingDir = _options.UnityProject;
 
 			ConsoleWriteLine($"Working directory: {workingDir}", ConsoleColor.Gray, true);
 
@@ -49,7 +49,11 @@ namespace NuGet2Unity
 
 			ConsoleWrite($"Downloading package and dependencies...", ConsoleColor.Cyan);
 			NuGetClient ngc = new NuGetClient();
-			IEnumerable<string> files = await ngc.DownloadPackageAndDependenciesAsync(opt.Package, opt.Version, nuGetDir);
+
+			if(string.IsNullOrEmpty(_options.Version))
+				_options.Version = await ngc.GetLatestVersionAsync(_options.Package);
+
+			IEnumerable<string> files = await ngc.DownloadPackageAndDependenciesAsync(_options.Package, _options.Version, nuGetDir);
 			ConsoleWriteLine($"OK", ConsoleColor.Green);
 
 			foreach(string file in files)
@@ -61,12 +65,12 @@ namespace NuGet2Unity
 				}
 			}
 			CreateLinkXml(pluginsDir);
-			CreateUnityPackage(opt.Package, workingDir, opt);
+			CreateUnityPackage(_options.Package, workingDir, _options);
 
 			if(Debugger.IsAttached)
 				Console.ReadKey();
 
-			Cleanup(nuGetDir, string.IsNullOrEmpty(opt.UnityProject) ? workingDir : string.Empty);
+			Cleanup(nuGetDir, string.IsNullOrEmpty(_options.UnityProject) ? workingDir : string.Empty);
 		}
 
 		private static bool VerifyOptions(Options opt)

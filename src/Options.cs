@@ -7,7 +7,7 @@ namespace NuGet2Unity
 		[Option('n', "nugetpackage", Required = true, HelpText = "NuGet package to repackage")]
 		public string Package { get; set; }
 
-		[Option('v', "version", Required = true, HelpText = "Version of NuGet package to use")]
+		[Option('v', "version", HelpText = "Version of NuGet package to use")]
 		public string Version { get; set; }
 
 		[Option('p', "unityproject", HelpText = "Path to the Unity project to include with this package")]
