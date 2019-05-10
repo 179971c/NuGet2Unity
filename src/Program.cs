@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
-
 using CommandLine;
 using UnityPacker;
 using System.Text;
@@ -51,7 +50,14 @@ namespace NuGet2Unity
 			NuGetClient ngc = new NuGetClient();
 
 			if(string.IsNullOrEmpty(_options.Version))
+			{
 				_options.Version = await ngc.GetLatestVersionAsync(_options.Package);
+				if(_options.Version == null)
+				{
+					ConsoleWriteError("Package not found");
+					return;
+				}
+			}
 
 			IEnumerable<string> files = await ngc.DownloadPackageAndDependenciesAsync(_options.Package, _options.Version, nuGetDir);
 			ConsoleWriteLine($"OK", ConsoleColor.Green);

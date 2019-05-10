@@ -46,8 +46,11 @@ namespace NuGet2Unity
 				{
 					DependencyInfoResource dependencyInfoResource = repo.GetResource<DependencyInfoResource>();
 					IEnumerable<SourcePackageDependencyInfo> packages = await dependencyInfoResource.ResolvePackages(packageId, _nuGetFramework, cacheContext, _logger, CancellationToken.None);
-					SourcePackageDependencyInfo version = packages.Where(p => p.Listed && !p.Version.IsPrerelease).OrderByDescending(x => x.Version).First();
-					return version.Version.ToNormalizedString();
+					if(packages != null && packages.Count() > 0)
+					{
+						SourcePackageDependencyInfo version = packages.Where(p => p.Listed && !p.Version.IsPrerelease).OrderByDescending(x => x.Version).First();
+						return version.Version.ToNormalizedString();
+					}
 				}
 				return null;
 			}
